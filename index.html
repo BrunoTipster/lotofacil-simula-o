@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados da Lotofácil</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Resultados da Lotofácil</h1>
+        <div id="results" class="mt-4">
+            <!-- Os resultados serão inseridos aqui -->
+        </div>
+    </div>
+
+    <script>
+        // URL da página da Lotofácil
+        const url = "https://www.megasena.com/lotofacil/resultados";
+
+        async function fetchResults() {
+            try {
+                // Fazendo a solicitação HTTP para obter o conteúdo da página
+                const response = await fetch(url);
+                const text = await response.text();
+
+                // Analisando o HTML com DOMParser
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+
+                // Encontrando o último resultado
+                const lastResult = doc.querySelector('table._results._archive.-center.facil');
+                const drawNumber = lastResult.querySelector('div.draw-number strong').innerText;
+                const drawDate = lastResult.querySelector('div.date').innerText.trim();
+
+                // Extraindo os números sorteados
+                const numbers = [];
+                const balls = lastResult.querySelectorAll('li.ball.facil');
+                balls.forEach(ball => numbers.push(ball.innerText));
+
+                // Armazenando o último resultado
+                const results = [{
+                    "concurso": drawNumber,
+                    "data": drawDate,
+                    "numeros": numbers
+                }];
+
+                // Encontrando resultados anteriores
+                const previousResults = doc.querySelectorAll('tr');
+                previousResults.forEach((result, index) => {
+                    if (index > 1) {  // Ignorando os cabeçalhos
+                        const drawInfo = result.querySelector('div.draw-number');
+                        if (drawInfo) {
+                            const drawNumber = drawInfo.querySelector('strong').innerText;
+                            const drawDate = result.querySelector('div.date').innerText.trim();
+                            const numbers = Array.from(result.querySelectorAll('li.ball.facil')).map(ball => ball.innerText);
+                            results.push({
+                                "concurso": drawNumber,
+                                "data": drawDate,
+                                "numeros": numbers
+                            });
+                        }
+                    }
+                });
+
+                // Exibindo os resultados
+                displayResults(results);
+            } catch (error) {
+                console.error('Erro ao buscar os resultados:', error);
+            }
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            results.forEach(result => {
+                const resultCard = document.createElement('div');
+                resultCard.classList.add('card', 'mb-3');
+                resultCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">Concurso: ${result.concurso}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Data: ${result.data}</h6>
+                        <p class="card-text">Números sorteados: ${result.numeros.join(', ')}</p>
+                    </div>
+                `;
+                resultsContainer.appendChild(resultCard);
+            });
+        }
+
+        // Executa a função para buscar e exibir os resultados
+        fetchResults();
+    </script>
+</body>
+</html>
